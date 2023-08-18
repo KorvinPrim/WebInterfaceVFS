@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Korvin Prim page</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://getbootstrap.com/docs/4.6/examples/cover/cover.css">
+    <link rel="stylesheet" href="../style/mystyle.css",type="text/css">
+
+    <style>
+
+#with-margins{
+        color: whitesmoke;
+        font-size: 15px;
+        white-space: pre-wrap;
+        margin-bottom: 1px;
+        margin-top: 1px;
+        /* Другие свойства стиля */
+    }
+#bt-back{
+    margin-left: -550px;
+    margin-top: 40px;
+}
+
+
+</style>
+</head>
+
+<body class="text-center">
+
+<div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <header class="masthead mb-auto">
+        <div class="inner">
+            <h3 class="masthead-brand">KorvinPrim</h3>
+            <nav class="nav nav-masthead justify-content-center">
+                <a class="nav-link active" href="/">Главная</a>
+                <a class="nav-link" href="/contact/">Контакты</a>
+                <a class="nav-link" href="#">Про нас</a>
+            </nav>
+        </div>
+    </header>
+
+    <main role="main" class="inner cover-left">
+        <h1 class="cover-heading">Отсканированные файлы и папки:</h1>
+        {{ index . 0 }}
+        {{ range . }}
+
+
+        {{if  .ThisCurrentFolder}}
+        {{else}}
+        <p class="text-left" id="with-margins"><a href="/folder/{{ .FilePath }}" >{{ .FileDescription }}</a></p>
+        {{end}}
+
+
+        {{else}}
+        <p class="lead">Содержимого нет</p>
+        {{end}}
+
+   
+            <a href="/back" class="btn btn-lg btn-secondary" id="bt-back">Назад</a>
+        </p>
+
+
+    </main>
+
+    <footer class="mastfoot mt-auto">
+        <div class="inner">
+            <p>Go here: <a href="https://github.com/KorvinPrim">GitHub KorvinPrim</a></p>
+        </div>
+    </footer>
+</div>
+
+</body>
+
+</html>
