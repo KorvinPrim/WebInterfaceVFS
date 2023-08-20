@@ -6,37 +6,40 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-
-	"github.com/gorilla/mux"
-	_ "github.com/gorilla/mux" //go get -u github.com/gorilla/mux
 )
 
+// frontendData структура для экземпляра файла для передачи во фронтенд, в будущем будет убран и заменён json-ном
 type frontendData struct {
 	FileDescription   string
 	FilePath          string
 	ThisCurrentFolder bool
 }
 
-var showFullPath string
-var listResFront map[string]ParticularFile
-var currertPath string
-var startPath string
-var returnRes []frontendData
+var showFullPath string //Переменная отвечающая за включения показа
+// полного пути приравнять к full-что бы отображать полный путь
+var listResFront map[string]ParticularFile //Список со всеми файлами
+var currertPath string                     //Текущая дериктория
+var startPath string                       //Путь стартовой дериктории
+var returnRes []frontendData               //Список файлов в текущей директории
 
-// writeRes() выводит результаты работы программы и представляет их в удобном виде для понимания
+// OutputFileFolders() собирает строки для передачи в HTML
 func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVisibility string) ([]frontendData, error) {
 	returnRes = []frontendData{}
 
 	//Производим сортировку через ключи (полный путь)
 	keys := make([]string, 0, len(mapRes))
 	for key := range mapRes {
+		//Проверяем, является ли родительской директорией файла текущая директория, если да, тогда добавляем его
 		if mapRes[key].MotherDir == rootPath {
 			keys = append(keys, key)
 		}
 	}
+
 	sort.Strings(keys)
 	//Идём по основной mapRes через отсортированные ключи
-
+	//Остаток кода после работы с gorillaMix, при переходе на работу с JS и PHP будет упразнён
+	//Сейчас оставлен для работоспособности текущей версии.
+	//Код отвечал за переконвертировании ссылки-пути: dir1_dir2_file1 в формат dir1/dir2/file1
 	listFolderDirSplit := strings.Split(rootPath, "_")
 	MatherPathForCurrertPath := strings.Join(listFolderDirSplit[:len(listFolderDirSplit)-1], "/")
 	selfElem := frontendData{fmt.Sprintf("This dir: %v", rootPath),
@@ -44,6 +47,7 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 		true}
 	returnRes = append(returnRes, selfElem)
 
+	//Формируем структуру frontendData для передачи во фронтенд
 	for _, SortKey := range keys {
 		//Определяем тип
 		fileI := mapRes[SortKey]
@@ -65,15 +69,13 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 			dimension = " Kb"
 		}
 
-		//В зависимости от заданного при старте работы, устанавливаем отображение
-		//только имяни или пути
-
+		//В зависимости от заданного при старте работы, устанавливаем отображение имяни или пути
 		if fullVisibility == "full" {
 			nameForD = SortKey
 		} else {
 			nameForD = fileI.Name
 		}
-
+		//Переформатируем строку из формата dir1/dir2/file1 в dir1_dir2_file1
 		pathFromFront := strings.Join(strings.Split(SortKey, "/"), "_")
 		selfElem := frontendData{fmt.Sprintf("%v%v  -  %v %v %v", personalTabulation, directORfile, nameForD, size, dimension),
 			pathFromFront,
@@ -89,7 +91,7 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 func index(w http.ResponseWriter, r *http.Request) {
 	currertPath = startPath
 	tmpl, _ := template.ParseFiles("templates/index.html")
-	fmt.Println(currertPath)
+
 	res, err := OutputFileFolders(listResFront, currertPath, showFullPath)
 	if err != nil {
 
@@ -99,63 +101,23 @@ func index(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, res)
 }
 
-func showDataFolder(w http.ResponseWriter, r *http.Request) {
-	tmpl, _ := template.ParseFiles("templates/index.html")
-	vars := mux.Vars(r)
-	correctDirPath := strings.Join(strings.Split(vars["key"], "_"), "/")
-	currertPath = correctDirPath
-
-	fmt.Println(correctDirPath)
-	res, err := OutputFileFolders(listResFront, correctDirPath, showFullPath)
-	if err != nil {
-
-		return
-	}
-	tmpl.Execute(w, res)
-}
-
-func back(w http.ResponseWriter, r *http.Request) {
-	tmpl, _ := template.ParseFiles("templates/index.html")
-	vars := mux.Vars(r)
-
-	listFolderDirSplit := strings.Split(vars["key"], "_")
-
-	correctDirPath := strings.Join(listFolderDirSplit[:len(listFolderDirSplit)-1], "/")
-	currertPath = correctDirPath
-
-	fmt.Println(correctDirPath)
-	res, err := OutputFileFolders(listResFront, correctDirPath, showFullPath)
-	if err != nil {
-
-		return
-	}
-	tmpl.Execute(w, res)
-}
-
 // handleRequest() цепляет функции на вызываемые адреса
 func handleRequest() {
-	rtr := mux.NewRouter()
-	rtr.HandleFunc("/", index)
-
-	rtr.HandleFunc("/back/{key}", back)
-
-	//the ending can only accept numbers from 0-9 and there can be several of them
-	rtr.HandleFunc("/folder/{key}", showDataFolder).Methods("GET", "POST")
-
-	http.Handle("/", rtr)
+	//Добавляем обработку основной ссылки
+	http.HandleFunc("/", index)
+	//Добавляем статику
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	//Слушаем адреса с 8080 порта
 	http.ListenAndServe(":8080", nil)
 }
 
-// main() Основная функция запускает обработчик запросов адресов
+// main() Основная функция запускает обработчик запросов адресов и в ней формируются тестовые файлы и директории
 func main() {
 	showFullPath = ""
 	currertPath = "/"
 	startPath = currertPath
 	listResFront = make(map[string]ParticularFile)
 	listResFront["/File1.exe"] = ParticularFile{
-		//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
-		//пути в имени при выводе
 		"File1.exe",
 		10000,
 		false,
@@ -163,8 +125,6 @@ func main() {
 		false}
 
 	listResFront["/File2.exe"] = ParticularFile{
-		//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
-		//пути в имени при выводе
 		"File2.exe",
 		10000,
 		false,
@@ -172,8 +132,6 @@ func main() {
 		false}
 
 	listResFront["/folder1"] = ParticularFile{
-		//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
-		//пути в имени при выводе
 		"folder1.exe",
 		10000,
 		true,
@@ -181,8 +139,6 @@ func main() {
 		false}
 
 	listResFront["/folder1/fieTerminal.exe"] = ParticularFile{
-		//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
-		//пути в имени при выводе
 		"fieTerminal.exe",
 		9010,
 		false,

@@ -1,0 +1,17 @@
+
+#with-margins{
+    color: whitesmoke;
+    font-size: 15px;
+    white-space: pre-wrap;
+    margin-bottom: 1px;
+    margin-top: 1px;
+    /* Другие свойства стиля */
+}
+#bt-back{
+    margin-left: -550px;
+    margin-top: 40px;
+}
+
+body {
+    background: #2a2831;
+}
