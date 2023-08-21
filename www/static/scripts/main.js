@@ -5,33 +5,10 @@ const request = new XMLHttpRequest();
 
 const url = "http://localhost:8080/?ROOT=" + currertPath
 
-request.open('GET', url);
-
-request.setRequestHeader('Content-Type', 'application/json');
-
-request.addEventListener("readystatechange", () => {
-	
-    /*   request.readyState - возвращает текущее состояние объекта XHR(XMLHttpRequest) объекта, 
-    бывает 4 состояния 4-е состояние запроса - операция полностью завершена, пришел ответ от сервера, 
-    вот то что нам нужно request.status это статус ответа, 
-    нам нужен код 200 это нормальный ответ сервера, 401 файл не найден, 500 сервер дал ошибку и прочее...   */
-       if (request.readyState === 4 && request.status === 200) {
-       
-         // выводим в консоль то что ответил сервер
-         console.log( request.responseText );
-       }
-   });
-    
-   // Выполняем запрос 
-   request.send();
 
 
-var b = document.getElementById("mybutton");
-b.onclick = function() {
-	alert("Спасибо, что щелкнули на мне!"); 
-};
 
-b.addEventListener("click", function() {alert('Еще раз спасибо!')}, false); 
+
 
 //------------------------
 const log = document.querySelector(".event-log-contents");
@@ -53,5 +30,28 @@ document.addEventListener("readystatechange", (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", (event) => {
+    request.open('GET', url);
+    
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.responseType = "json";
+    request.addEventListener("readystatechange", () => {
+	
+    /*   request.readyState - возвращает текущее состояние объекта XHR(XMLHttpRequest) объекта, 
+    бывает 4 состояния 4-е состояние запроса - операция полностью завершена, пришел ответ от сервера, 
+    вот то что нам нужно request.status это статус ответа, 
+    нам нужен код 200 это нормальный ответ сервера, 401 файл не найден, 500 сервер дал ошибку и прочее...   */
+       if (request.readyState === 4 && request.status === 200) {
+       
+         // выводим в консоль то что ответил сервер
+         var Data = request.response;
+        console.log(Data["DataDir"][1]["FileDescription"]);
+         
+         //log.textContent = log.textContent + parsedData;
+       }
+   });
+    
+   // Выполняем запрос 
+   request.send();
+
   log.textContent = log.textContent + `DOMContentLoaded\n`;
 });

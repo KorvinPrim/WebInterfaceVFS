@@ -125,7 +125,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	res, _ := OutputFileFolders(listResFront, currertPath, showFullPath)
 
 	//Конвертируем результирующую структуру в формат Json
-
+	//transForResJson, _ := json.Marshal(res)
 	transpForFrontJson = transportStruct{statusScanPath, err, currertPath, res, time}
 
 	jsonFormData, _ := json.Marshal(transpForFrontJson)
