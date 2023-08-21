@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"html/template"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -17,12 +18,13 @@ type frontendData struct {
 
 var showFullPath string //Переменная отвечающая за включения показа
 // полного пути приравнять к full-что бы отображать полный путь
-var listResFront map[string]ParticularFile //Список со всеми файлами
+var listResFront map[string]ParticularFile //Список со всеми файлами в отсканированной директории
 var currertPath string                     //Текущая дериктория
 var startPath string                       //Путь стартовой дериктории
 var returnRes []frontendData               //Список файлов в текущей директории
 
-// OutputFileFolders() собирает строки для передачи в HTML
+// OutputFileFolders() собирает структуру с нужными данными и в нужном формате
+// о полученных файлов для конвертации в Json и передачи в http.ResponseWriter в дальнейшем
 func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVisibility string) ([]frontendData, error) {
 	returnRes = []frontendData{}
 
@@ -89,16 +91,27 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 
 // index() обработка основной страницы и создание экцемпляра User
 func index(w http.ResponseWriter, r *http.Request) {
-	currertPath = startPath
-	tmpl, _ := template.ParseFiles("templates/index.html")
-
+	//tmpl, _ := template.ParseFiles("templates/index.html") //Убрали подтягивание шаблона HTML
+	//Получаем значение пути из ссылки
+	currertPath := r.URL.Query().Get("ROOT")
+	log.Println(currertPath)
+	//Отправляем путь в VFS
+	listResFront, err := Read(currertPath)
+	if err != nil {
+		log.Println(err)
+	}
+	//Формируем структуры вывода для JS
 	res, err := OutputFileFolders(listResFront, currertPath, showFullPath)
 	if err != nil {
 
 		return
 	}
+	//Конвертируем результирующую структуру в формат Json
+	jsonFormRes, _ := json.Marshal(res)
+	//Передаём Json в http.ResponseWriter
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonFormRes)
 
-	tmpl.Execute(w, res)
 }
 
 // handleRequest() цепляет функции на вызываемые адреса
@@ -117,33 +130,6 @@ func main() {
 	currertPath = "/"
 	startPath = currertPath
 	listResFront = make(map[string]ParticularFile)
-	listResFront["/File1.exe"] = ParticularFile{
-		"File1.exe",
-		10000,
-		false,
-		"/",
-		false}
-
-	listResFront["/File2.exe"] = ParticularFile{
-		"File2.exe",
-		10000,
-		false,
-		"/",
-		false}
-
-	listResFront["/folder1"] = ParticularFile{
-		"folder1.exe",
-		10000,
-		true,
-		"/",
-		false}
-
-	listResFront["/folder1/fieTerminal.exe"] = ParticularFile{
-		"fieTerminal.exe",
-		9010,
-		false,
-		"/folder1",
-		false}
 
 	handleRequest()
 }

@@ -173,10 +173,10 @@ func ScanPath(wg *sync.WaitGroup,
 	return files, nil
 }
 
-// StartScan()  Эта функция начинает процесс
+// Read()  Эта функция начинает процесс
 // сбора данных в указанной директории и координирует
 // гоурутины.
-func StartScan(pathScan string, fullVisibility string) error {
+func Read(pathScan string) (map[string]ParticularFile, error) {
 	var wgScan sync.WaitGroup
 	wgScan.Add(1)
 
@@ -187,10 +187,8 @@ func StartScan(pathScan string, fullVisibility string) error {
 	//Дожидаемся окончания
 	wgScan.Wait()
 	//Выводим результаты
-	errmess := writeRes(listRes, pathScan, fullVisibility)
-	if errmess != nil {
-		return errmess
-	}
-	return nil
+	fmt.Println(listRes)
+
+	return listRes, nil
 
 }
