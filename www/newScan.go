@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 // ParticularFile тип структуры созданный для удобства отображения конкретного файла
@@ -99,6 +101,17 @@ func writeRes(mapRes map[string]ParticularFile, rootPath string, fullVisibility 
 	return nil
 }
 
+// checkCorrectnessPath() проверяет, существует ли путь
+func checkCorrectnessPath(rootPath string) error {
+	dir, err := os.Open(path.Join(rootPath))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer dir.Close()
+	return nil
+}
+
 // OpenPath() открывает и собирает данные в указанной директории
 // после возвращает полученный []fs.FileInfo.
 func OpenPath(rootPath string) ([]fs.FileInfo, error) {
@@ -176,19 +189,26 @@ func ScanPath(wg *sync.WaitGroup,
 // Read()  Эта функция начинает процесс
 // сбора данных в указанной директории и координирует
 // гоурутины.
-func Read(pathScan string) (map[string]ParticularFile, error) {
+func Read(pathScan string) (map[string]ParticularFile, string, error) {
+	starttime := time.Now()
 	var wgScan sync.WaitGroup
 	wgScan.Add(1)
 
 	listRes = make(map[string]ParticularFile)
 
 	//Запускаем сбор данных
-	go ScanPath(&wgScan, pathScan, &mutex)
-	//Дожидаемся окончания
-	wgScan.Wait()
-	//Выводим результаты
-	fmt.Println(listRes)
+	err := checkCorrectnessPath(pathScan)
 
-	return listRes, nil
-
+	if err != nil {
+		workTime := fmt.Sprintf("%v", time.Since(starttime))
+		return nil, workTime, err
+	} else {
+		go ScanPath(&wgScan, pathScan, &mutex)
+		//Дожидаемся окончания
+		wgScan.Wait()
+		//Выводим результаты
+		workTime := fmt.Sprintf("%v", time.Since(starttime))
+		log.Println(workTime)
+		return listRes, workTime, nil
+	}
 }

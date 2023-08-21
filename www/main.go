@@ -3,13 +3,23 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 )
 
-// frontendData структура для экземпляра файла для передачи во фронтенд, в будущем будет убран и заменён json-ном
+// transportStruct Транспортная обёртка для данных для фронтенда
+type transportStruct struct {
+	Status            bool
+	ErrText           error
+	CurrentPathFolder string
+	DataDir           []frontendData
+	TimeWork          string
+}
+
+// frontendData структура для экземпляра файла для передачи во фронтенд
 type frontendData struct {
 	FileDescription   string
 	FilePath          string
@@ -22,6 +32,8 @@ var listResFront map[string]ParticularFile //Список со всеми фай
 var currertPath string                     //Текущая дериктория
 var startPath string                       //Путь стартовой дериктории
 var returnRes []frontendData               //Список файлов в текущей директории
+var transpForFrontJson transportStruct     //Транспортная обёртка для данных для фронтенда
+var statusScanPath bool                    //Удалось ли провести сканирование пути
 
 // OutputFileFolders() собирает структуру с нужными данными и в нужном формате
 // о полученных файлов для конвертации в Json и передачи в http.ResponseWriter в дальнейшем
@@ -78,9 +90,9 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 			nameForD = fileI.Name
 		}
 		//Переформатируем строку из формата dir1/dir2/file1 в dir1_dir2_file1
-		pathFromFront := strings.Join(strings.Split(SortKey, "/"), "_")
+		//pathFromFront := strings.Join(strings.Split(SortKey, "/"), "_")
 		selfElem := frontendData{fmt.Sprintf("%v%v  -  %v %v %v", personalTabulation, directORfile, nameForD, size, dimension),
-			pathFromFront,
+			SortKey,
 			false,
 		}
 		returnRes = append(returnRes, selfElem)
@@ -89,35 +101,59 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 	return returnRes, nil
 }
 
-// index() обработка основной страницы и создание экцемпляра User
+// index() обработка основной страницы
 func index(w http.ResponseWriter, r *http.Request) {
 	//tmpl, _ := template.ParseFiles("templates/index.html") //Убрали подтягивание шаблона HTML
 	//Получаем значение пути из ссылки
 	currertPath := r.URL.Query().Get("ROOT")
 	log.Println(currertPath)
 	//Отправляем путь в VFS
-	listResFront, err := Read(currertPath)
+	log.Println(currertPath)
+	listResFront, time, err := Read(currertPath)
+
 	if err != nil {
 		log.Println(err)
 	}
+
+	if err != nil {
+		statusScanPath = false
+	} else {
+		statusScanPath = true
+	}
+
 	//Формируем структуры вывода для JS
+	res, _ := OutputFileFolders(listResFront, currertPath, showFullPath)
+
+	//Конвертируем результирующую структуру в формат Json
+
+	transpForFrontJson = transportStruct{statusScanPath, err, currertPath, res, time}
+
+	jsonFormData, _ := json.Marshal(transpForFrontJson)
+	//Передаём Json в http.ResponseWriter
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonFormData)
+
+}
+
+// home_page() обработка тестовой страницы в дальнейшем будет удалёно или изменено
+func home_page(w http.ResponseWriter, r *http.Request) {
 	res, err := OutputFileFolders(listResFront, currertPath, showFullPath)
 	if err != nil {
 
 		return
 	}
-	//Конвертируем результирующую структуру в формат Json
-	jsonFormRes, _ := json.Marshal(res)
-	//Передаём Json в http.ResponseWriter
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonFormRes)
 
+	tmpl, _ := template.ParseFiles("templates/index.html")
+
+	tmpl.Execute(w, res)
 }
 
 // handleRequest() цепляет функции на вызываемые адреса
 func handleRequest() {
 	//Добавляем обработку основной ссылки
 	http.HandleFunc("/", index)
+	//Добавляем обработчик демонстрационной страницы (тест)
+	http.HandleFunc("/home", home_page)
 	//Добавляем статику
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	//Слушаем адреса с 8080 порта
@@ -133,3 +169,5 @@ func main() {
 
 	handleRequest()
 }
+
+//http://localhost:8080/?ROOT=/home/anton/go/src/WebInterfaceVFS/
