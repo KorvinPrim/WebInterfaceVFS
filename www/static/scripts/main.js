@@ -60,7 +60,7 @@ function renderBackButton(scanDirDiv) {
     //При нажатии на кнопку обрабатываем запрос на материнскую папку от текущей
     (function(e) {
       e.addEventListener('click', async function () {
-        
+        window.moveTo(0,0)
         if (!waitAnswer){
           waitAnswer = true;
         
@@ -101,7 +101,7 @@ function renderBackButton(scanDirDiv) {
 }
 //render() отвечает за рендер надписи текущей папки и времени работы, а так же запуска
 //рендера списка файлов и кнопки назад
-function render(d) {
+function render(dataForRender) {
   var scanDirDiv = document.querySelector("div.scanDir");
 
   scanDirDiv.innerHTML = '';
@@ -109,18 +109,18 @@ function render(d) {
   var elem = document.createElement("p");
   elem.setAttribute("class", "text-left");
   elem.setAttribute("id", "with-margins-label");
-  var elemTextRoot = document.createTextNode("Текущая директория: "+d["CurrentPathFolder"]);
+  var elemTextRoot = document.createTextNode("Текущая директория: "+dataForRender["CurrentPathFolder"]);
   elem.appendChild(elemTextRoot);
   scanDirDiv.appendChild(elem);
 
   var elem = document.createElement("p");
   elem.setAttribute("class", "text-left");
   elem.setAttribute("id", "with-margins-label");
-  var elemTextTime = document.createTextNode("Время открытия: "+d["TimeWork"]);
+  var elemTextTime = document.createTextNode("Время открытия: "+dataForRender["TimeWork"]);
   elem.appendChild(elemTextTime);
   scanDirDiv.appendChild(elem);
 
-  renderListDir(d,scanDirDiv);
+  renderListDir(dataForRender,scanDirDiv);
   renderBackButton(scanDirDiv)
   
 
@@ -133,7 +133,7 @@ function getDataDir(cPath) {
   return new Promise(function(resolve, reject) {
     const request = new XMLHttpRequest();
 
-    const url = "http://localhost:8080/?ROOT=" + cPath;
+    const url = "/?ROOT=" + cPath;
     request.open('GET', url);
     request.setRequestHeader('Content-Type', 'application/json');
     request.responseType = "json";

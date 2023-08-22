@@ -72,7 +72,7 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 		//Добавляем табуляцию по число вложений в папки отнимаем начальный сдвиг по исходному пути
 		personalTabulation := strings.Repeat("\t", len(strings.Split(SortKey, "/"))-len(strings.Split(rootPath, "/")))
 		//Определяем форматирование относительно веса файла
-		dimension := "File is blocked!"
+		dimension := "Dir is blocked!"
 		var size string
 		var nameForD string
 		if fileI.Size < 0 {
