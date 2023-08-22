@@ -18,11 +18,11 @@ import (
 // файлом или папкой, какая директория для этого экземпляра родительская и выведена ли уже
 // информция о нём в терминал
 type ParticularFile struct {
-	Name       string //Имя файла
-	Size       int64  //Размер файла
-	IsDir      bool   //Папка ли конкретная сущность
-	MotherDir  string //Родительский путь
-	WritStatus bool   //Выведен ли уже в терминал
+	Name      string //Имя файла
+	Size      int64  //Размер файла
+	IsDir     bool   //Папка ли конкретная сущность
+	MotherDir string //Родительский путь
+	TimeScan  string //Время сканирования файла
 }
 
 // listRes карта содержащая все экземпляры ParticularFile найденные во время работы, для
@@ -143,11 +143,15 @@ func OpenPath(rootPath string) ([]fs.FileInfo, error) {
 // Далее записывает их в зависимости от типа (файл или директория)
 // Если директория, тогда вызывает новую горутину самого себя для учёта всех файлов этой директории
 func ScanPath(wg *sync.WaitGroup,
+	wgFolder *sync.WaitGroup,
 	rootPath string,
 	mutex *sync.Mutex,
 ) ([]fs.FileInfo, error) {
 	defer mutex.Unlock()
 	defer func() { wg.Done() }()
+	//Запускаем таймер
+	starttime := time.Now()
+
 	//Получаем список []fs.FileInfo с файлами в указанной директории
 	files, err := OpenPath(rootPath)
 	if err != nil {
@@ -167,7 +171,7 @@ func ScanPath(wg *sync.WaitGroup,
 				file.Size(),
 				false,
 				rootPath,
-				false}
+				fmt.Sprintf("%v", time.Since(starttime))}
 		} else {
 			//Если папка находим размер
 			Fsize, err := folderSize(path.Join(rootPath, file.Name()))
@@ -179,9 +183,10 @@ func ScanPath(wg *sync.WaitGroup,
 					-1,
 					true,
 					rootPath,
-					false}
+					fmt.Sprintf("%v", time.Since(starttime))}
 			} else {
-				//Запиываем эту папку с её размером
+				//Записываем эту папку с её размером
+
 				listRes[path.Join(rootPath, file.Name())] = ParticularFile{
 					//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
 					//пути в имени при выводе
@@ -189,15 +194,23 @@ func ScanPath(wg *sync.WaitGroup,
 					Fsize,
 					true,
 					rootPath,
-					false}
+					""}
 				//Запускаем горутину для этой папки
 				wg.Add(1)
-				go ScanPath(wg, path.Join(rootPath, file.Name()), mutex)
+
+				wgFolder.Add(1)
+				go ScanPath(wg, wgFolder, path.Join(rootPath, file.Name()), mutex)
+				wgFolder.Wait()
+				workTime := fmt.Sprintf("%v", time.Since(starttime))
+				linklOneElem := listRes[path.Join(rootPath, file.Name())]
+				linklOneElem.TimeScan = workTime
 
 			}
 		}
 
 	}
+	wgFolder.Add(-1)
+
 	return files, nil
 }
 
@@ -211,6 +224,7 @@ func Read(pathScan string) (map[string]ParticularFile, string, error) {
 	// }
 	starttime := time.Now()
 	var wgScan sync.WaitGroup
+	var wgScanFolder sync.WaitGroup
 	wgScan.Add(1)
 
 	listRes = make(map[string]ParticularFile)
@@ -222,7 +236,7 @@ func Read(pathScan string) (map[string]ParticularFile, string, error) {
 		workTime := fmt.Sprintf("%v", time.Since(starttime))
 		return nil, workTime, err
 	} else {
-		go ScanPath(&wgScan, pathScan, &mutex)
+		go ScanPath(&wgScan, &wgScanFolder, pathScan, &mutex)
 		//Дожидаемся окончания
 		wgScan.Wait()
 		//Выводим результаты

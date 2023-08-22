@@ -1,12 +1,31 @@
+#with-margins-label{
+    color: rgb(245, 245, 245);
+    font-size: 18px;
+    white-space: pre-wrap;
+    margin-bottom: 1px;
+    margin-top: 1px;
+    /* Другие свойства стиля */
+}
+
 
 #with-margins{
-    color: whitesmoke;
+    color: rgb(245, 245, 245);
     font-size: 15px;
     white-space: pre-wrap;
     margin-bottom: 1px;
     margin-top: 1px;
     /* Другие свойства стиля */
 }
+
+#with-margins:hover {
+    color: red;
+    font-size: 17px;
+    white-space: pre-wrap;
+    margin-bottom: 1px;
+    margin-top: 1px;
+    cursor: pointer;
+  }
+
 #bt-back{
     margin-left: -550px;
     margin-top: 40px;
@@ -15,3 +34,4 @@
 body {
     background: #2a2831;
 }
+

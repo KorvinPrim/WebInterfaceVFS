@@ -72,17 +72,21 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 		//Добавляем табуляцию по число вложений в папки отнимаем начальный сдвиг по исходному пути
 		personalTabulation := strings.Repeat("\t", len(strings.Split(SortKey, "/"))-len(strings.Split(rootPath, "/")))
 		//Определяем форматирование относительно веса файла
-		dimension := " ba"
-		var size int64
+		dimension := "File is blocked!"
+		var size string
 		var nameForD string
-		if fileI.Size/1024/1024 != 0 {
-			size = fileI.Size / 1024 / 1024
+		if fileI.Size < 0 {
+			size = ""
+		} else if fileI.Size/1024/1024 != 0 {
+			size = fmt.Sprint(fileI.Size / 1024 / 1024)
 			dimension = " Mb"
 		} else if fileI.Size/1024 != 0 {
-			size = fileI.Size / 1024
+			size = fmt.Sprint(fileI.Size / 1024)
 			dimension = " Kb"
+		} else if fileI.Size/1024 != 0 {
+			size = fmt.Sprint(fileI.Size)
+			dimension = " ba"
 		}
-
 		//В зависимости от заданного при старте работы, устанавливаем отображение имяни или пути
 		if fullVisibility == "full" {
 			nameForD = SortKey
@@ -107,8 +111,14 @@ func index(w http.ResponseWriter, r *http.Request) {
 	//Получаем значение пути из ссылки
 	currertPath := r.URL.Query().Get("ROOT")
 	log.Println(currertPath)
+
+	//Проверяем, возможно сканирование уже проводилось
+	// count, ok := listResFront[currertPath]
+	// if ok{
+	// 	listResFront, time, err :=!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// }
+
 	//Отправляем путь в VFS
-	log.Println(currertPath)
 	listResFront, time, err := Read(currertPath)
 
 	if err != nil {
