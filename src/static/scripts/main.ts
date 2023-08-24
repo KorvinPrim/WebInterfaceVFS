@@ -2,7 +2,7 @@ import {getDataDir} from "./model";
 
 
 
-let startPath: string = "/home/anton/go/src/"; //Стартовая директория
+let startPath: string = "/home/anton/go/src"; //Стартовая директория
 let currertPath: string = startPath; //Текущая открытая директория
 
 
@@ -124,24 +124,31 @@ function render(dataForRender: any): void {
 
   scanDirDiv.innerHTML = '';
 
-  const elemRoot: HTMLParagraphElement = document.createElement("p");
-  elemRoot.setAttribute("class", "text-left");
-  elemRoot.setAttribute("id", "with-margins-label");
-  const elemTextRoot: Text = document.createTextNode("Текущая директория: " + dataForRender["CurrentPathFolder"]);
-  elemRoot.appendChild(elemTextRoot);
-  scanDirDiv.appendChild(elemRoot);
+  if (dataForRender === "error") {
+    const errorElem: HTMLParagraphElement = document.createElement("p");
+    errorElem.setAttribute("class", "text-left");
+    errorElem.setAttribute("id", "with-margins-label");
+    const errorText: Text = document.createTextNode("Сервер недоступен");
+    errorElem.appendChild(errorText);
+    scanDirDiv.appendChild(errorElem);
+  } else {
+    const elemRoot: HTMLParagraphElement = document.createElement("p");
+    elemRoot.setAttribute("class", "text-left");
+    elemRoot.setAttribute("id", "with-margins-label");
+    const elemTextRoot: Text = document.createTextNode("Текущая директория: " + dataForRender["CurrentPathFolder"]);
+    elemRoot.appendChild(elemTextRoot);
+    scanDirDiv.appendChild(elemRoot);
 
-  const elemTime: HTMLParagraphElement = document.createElement("p");
-  elemTime.setAttribute("class", "text-left");
-  elemTime.setAttribute("id", "with-margins-label");
-  const elemTextTime: Text = document.createTextNode("Время открытия: " + dataForRender["TimeWork"]);
-  elemTime.appendChild(elemTextTime);
-  scanDirDiv.appendChild(elemTime);
+    const elemTime: HTMLParagraphElement = document.createElement("p");
+    elemTime.setAttribute("class", "text-left");
+    elemTime.setAttribute("id", "with-margins-label");
+    const elemTextTime: Text = document.createTextNode("Время открытия: " + dataForRender["TimeWork"]);
+    elemTime.appendChild(elemTextTime);
+    scanDirDiv.appendChild(elemTime);
 
-  renderListDir(dataForRender, scanDirDiv);
-  renderBackButton(scanDirDiv)
-
-
+    renderListDir(dataForRender, scanDirDiv);
+    renderBackButton(scanDirDiv);
+  }
 };
 
 //Функция которая слушает ответ функции загрузки данных с сервера о состоянии ожидания

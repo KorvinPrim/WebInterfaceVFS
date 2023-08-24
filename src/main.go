@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"reflect"
 	"sort"
 	"strings"
+	"time"
 )
 
 // transportStruct Транспортная обёртка для данных для фронтенда
@@ -19,7 +24,17 @@ type transportStruct struct {
 	TimeWork          string
 }
 
-// frontendData структура для экземпляра файла для передачи во фронтенд
+// transportStructForPhp структура для экземпляра файла для передачи в бекенд php для дальнешей записи в субд
+type transportStructForPhp struct {
+	Status            bool
+	ErrText           error
+	CurrentPathFolder string
+	Date              string
+	Size              string
+	TimeWork          string
+}
+
+// frontendData структура для экземпляра файла для передачи во фронтенд js
 type frontendData struct {
 	FileDescription   string
 	FilePath          string
@@ -105,6 +120,128 @@ func OutputFileFolders(mapRes map[string]ParticularFile, rootPath string, fullVi
 	return returnRes, nil
 }
 
+// findFolderSizeByFiles() находит размер папки, по уже найденным файлам в ней
+func findFolderSizeByFiles(mapRes map[string]ParticularFile, rootPath string) string {
+	//returnRes = []frontendData{}
+
+	//Производим сортировку через ключи (полный путь)
+	keys := make([]string, 0, len(mapRes))
+	for key := range mapRes {
+		//Проверяем, является ли родительской директорией файла текущая директория, если да, тогда добавляем его
+		if mapRes[key].MotherDir == rootPath {
+			keys = append(keys, key)
+		}
+	}
+
+	sort.Strings(keys)
+	//Считаем вес файла
+	var size int64 = 0
+	for _, SortKey := range keys {
+		elemSize := mapRes[SortKey].Size
+		if fmt.Sprintf("%v", reflect.TypeOf(elemSize)) == "int64" {
+			size += elemSize
+		}
+
+	}
+	//Устанавливаем размерность массы файла
+	sizeForRet := ""
+	dimension := "Dir is blocked!"
+	if size < 0 {
+		sizeForRet = ""
+	} else if size/1024/1024 != 0 {
+		sizeForRet = fmt.Sprint(size / 1024 / 1024)
+		dimension = " Mb"
+	} else if size/1024 != 0 {
+		sizeForRet = fmt.Sprint(size / 1024)
+		dimension = " Kb"
+	} else if size/1024 != 0 {
+		sizeForRet = fmt.Sprint(size)
+		dimension = " ba"
+	}
+
+	return fmt.Sprintf("%v%v", sizeForRet, dimension)
+}
+
+// readServerId() возвращает ссылку на сервер для записи
+// данных в бд из файла configServ.txt
+func readServerId() (string, error) {
+	// Открываем файл для чтения
+	var firstLine string
+	file, err := os.Open("configServ.txt")
+	if err != nil {
+		fmt.Println("Ошибка при открытии файла:", err)
+		return "", err
+	}
+	defer file.Close()
+
+	// Создаем сканер для чтения файла
+	scanner := bufio.NewScanner(file)
+
+	// Читаем первую строку файла
+	if scanner.Scan() {
+		firstLine = scanner.Text()
+
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Ошибка при чтении файла:", err)
+	}
+	return firstLine, nil
+}
+
+// sendPhpData() отправляет данные о текущей папке в  PHP
+func sendPhpData(Status bool,
+	ErrText error,
+	CurrentPathFolder string,
+	Date string,
+	Size string,
+	TimeWork string) {
+	data := transportStructForPhp{Status, ErrText, CurrentPathFolder, Date, Size, TimeWork}
+	// Создаем структуру данных для JSON
+
+	// Преобразуем структуру данных в JSON
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", err)
+		return
+	}
+
+	curUrl, err := readServerId()
+	// Определенная ссылка для отправки JSON
+	url := curUrl + "/?ADDDATA=true"
+
+	if err != nil {
+		fmt.Println("Ошибка при считывании конфигурационного файла", err)
+		return
+	}
+
+	// Создаем запрос POST с JSON-данными
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("Ошибка при создании запроса:", err)
+		return
+	}
+
+	// Устанавливаем заголовок Content-Type для JSON
+	req.Header.Set("Content-Type", "multipart/form-data")
+
+	// Отправляем запрос и получаем ответ
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Ошибка при отправке запроса:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Проверяем статус ответа
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("JSON-файл успешно отправлен в", url)
+	} else {
+		fmt.Println("Ошибка при отправке JSON-файла. Код статуса:", resp.StatusCode)
+	}
+}
+
 // index() обработка основной страницы
 func index(w http.ResponseWriter, r *http.Request) {
 	//tmpl, _ := template.ParseFiles("templates/index.html") //Убрали подтягивание шаблона HTML
@@ -112,14 +249,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	currertPath := r.URL.Query().Get("ROOT")
 	log.Println(currertPath)
 
-	//Проверяем, возможно сканирование уже проводилось
-	// count, ok := listResFront[currertPath]
-	// if ok{
-	// 	listResFront, time, err :=!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// }
-
-	//Отправляем путь в VFS
-	listResFront, time, err := Read(currertPath)
+	listResFront, timeWorck, err := Read(currertPath)
 
 	if err != nil {
 		log.Println(err)
@@ -136,7 +266,13 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 	//Конвертируем результирующую структуру в формат Json
 	//transForResJson, _ := json.Marshal(res)
-	transpForFrontJson = transportStruct{statusScanPath, err, currertPath, res, time}
+	transpForFrontJson = transportStruct{statusScanPath, err, currertPath, res, timeWorck}
+
+	dt := time.Now()
+
+	sizeCurFold := findFolderSizeByFiles(listResFront, currertPath)
+	//Отправляем данные для PHP
+	sendPhpData(true, err, currertPath, dt.Format("01-02-2006"), sizeCurFold, timeWorck)
 
 	jsonFormData, _ := json.Marshal(transpForFrontJson)
 	//Передаём Json в http.ResponseWriter
