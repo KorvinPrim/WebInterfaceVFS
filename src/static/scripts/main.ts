@@ -2,7 +2,7 @@ import {getDataDir} from "./model";
 
 
 
-let startPath: string = "/home/anton/go/src/WebInterfaceVFS/src"; //Стартовая директория
+let startPath: string = "/home/anton/go/src/"; //Стартовая директория
 let currertPath: string = startPath; //Текущая открытая директория
 
 
