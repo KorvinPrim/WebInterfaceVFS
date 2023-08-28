@@ -1,4 +1,4 @@
-import {getDataDir} from "./model";
+import { getDataDir } from "./model";
 
 
 
@@ -7,12 +7,12 @@ let currertPath: string = startPath; //Текущая открытая дире�
 
 
 
-let dirJs : any //Функция в которую записывается ответ сервера
+let dirJs: any //Функция в которую записывается ответ сервера
 
 let renderContent: boolean = false; //Произошёл ли первичный рендер
 let waitAnswer: boolean = false; //Ждём ли ответ сервера
 
-let delGif:boolean = false; //Нужно ли удалить гифку загрузки после того как получили ответ сервера
+let delGif: boolean = false; //Нужно ли удалить гифку загрузки после того как получили ответ сервера
 
 //Загружаем данные для гифки загрузки
 let GifDiv: any = document.querySelector("div.gifLoad");
@@ -41,7 +41,7 @@ function renderListDir(Data: any, scanDirDiv: HTMLElement): void {
           console.log('Элемент ' + Data["DataDir"][i]["FilePath"] + ' был нажат');
           currertPath = Data["DataDir"][i]["FilePath"]
           //Получаем данные из этой директории
-          dirJs = await getDataDir(Data["DataDir"][i]["FilePath"],listAnsverForServer);
+          dirJs = await getDataDir(Data["DataDir"][i]["FilePath"], listAnsverForServer);
           console.log(dirJs);
           //Отрендериваем эти данные
           waitAnswer = false;
@@ -96,7 +96,7 @@ function renderBackButton(scanDirDiv: HTMLElement): void {
 
 
         console.log('Элемент ' + currertPath + ' был нажат');
-        dirJs = await getDataDir(currertPath,listAnsverForServer);
+        dirJs = await getDataDir(currertPath, listAnsverForServer);
         waitAnswer = false;
         render(dirJs);
 
@@ -152,32 +152,32 @@ function render(dataForRender: any): void {
 };
 
 //Функция которая слушает ответ функции загрузки данных с сервера о состоянии ожидания
-function listAnsverForServer(status:boolean): void{
+function listAnsverForServer(status: boolean): void {
   waitAnswer = !status
-  if (status == false){
+  if (status == false) {
     renderLoadGif(true)
-  }else{
+  } else {
     renderLoadGif(false)
   }
-  
+
 }
 
 
 
 
 //renderLoadGif() отвечает за отображение гифки загрузки
-function renderLoadGif(wait : boolean): void {
+function renderLoadGif(wait: boolean): void {
   console.log(GifDiv)
-  if (wait){
-        //Если идёт ожидание ответа от сервера, подгружает картинку загрузки
-        delGif = true;
+  if (wait) {
+    //Если идёт ожидание ответа от сервера, подгружает картинку загрузки
+    delGif = true;
 
-        GifDiv.appendChild(loadingImg);
-        //Таск передвинуть гифку вверх и уменьшить её
-  }else{
+    GifDiv.appendChild(loadingImg);
+    //Таск передвинуть гифку вверх и уменьшить её
+  } else {
 
     if (delGif) {
-  
+
       GifDiv.removeChild(loadingImg);
       delGif = false;
     }
@@ -189,23 +189,23 @@ function renderLoadGif(wait : boolean): void {
 
 //main() основная функция модуля ts которая идёт на импорт в index.ts
 //запускает первое открытие в стандартную папку
-export function main(): void{
+export function main(): void {
   window.addEventListener("load", (event) => {
 
   });
-  
+
   document.addEventListener("readystatechange", (event) => {
-  
+
   });
-  
+
   //Первичная прогрузка данных и первый стратовый запро на сервер
   document.addEventListener("DOMContentLoaded", async (event) => {
     dirJs = await getDataDir(currertPath, listAnsverForServer);
     console.log(dirJs)
-    if (!waitAnswer){
+    if (!waitAnswer) {
       render(dirJs);
     }
-    
+
   });
 }
 

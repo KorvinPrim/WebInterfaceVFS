@@ -170,7 +170,14 @@ func ScanPath(wg *sync.WaitGroup,
 				false}
 		} else {
 			//Если папка находим размер
-			Fsize, err := folderSize(path.Join(rootPath, file.Name()))
+			var Fsize int64 = -1
+			if file.Name() == "proc" {
+				fmt.Println(file.Name(), "!!!")
+			}
+			if file.Name() != "proc" {
+				Fsize, err = folderSize(path.Join(rootPath, file.Name()))
+			}
+
 			if err != nil {
 				listRes[path.Join(rootPath, file.Name())] = ParticularFile{
 					//path.Join(rootPath, file.Name()), - Такая запись если нужно вернуть отображение
@@ -219,14 +226,14 @@ func Read(pathScan string) (map[string]ParticularFile, string, error) {
 	err := checkCorrectnessPath(pathScan)
 
 	if err != nil {
-		workTime := fmt.Sprintf("%v", time.Since(starttime))
+		workTime := fmt.Sprintf("%.5f", time.Since(starttime).Seconds())
 		return nil, workTime, err
 	} else {
 		go ScanPath(&wgScan, pathScan, &mutex)
 		//Дожидаемся окончания
 		wgScan.Wait()
 		//Выводим результаты
-		workTime := fmt.Sprintf("%v", time.Since(starttime))
+		workTime := fmt.Sprintf("%.5f", time.Since(starttime).Seconds())
 		log.Println(workTime)
 		return listRes, workTime, nil
 	}

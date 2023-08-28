@@ -1,5 +1,7 @@
-import {main} from "./scripts/main";
+// import {main} from "./scripts/main";
+// main();
 
+import { main } from "./createGraph/createGraph";
 main();
 
 

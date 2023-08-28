@@ -195,7 +195,7 @@ func sendPhpData(Status bool,
 	CurrentPathFolder string,
 	Date string,
 	Size string,
-	TimeWork string) {
+	TimeWork string) error {
 	data := transportStructForPhp{Status, ErrText, CurrentPathFolder, Date, Size, TimeWork}
 	// Создаем структуру данных для JSON
 
@@ -203,7 +203,7 @@ func sendPhpData(Status bool,
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Ошибка при преобразовании в JSON:", err)
-		return
+		return err
 	}
 
 	curUrl, err := readServerId()
@@ -212,14 +212,14 @@ func sendPhpData(Status bool,
 
 	if err != nil {
 		fmt.Println("Ошибка при считывании конфигурационного файла", err)
-		return
+		return err
 	}
 
 	// Создаем запрос POST с JSON-данными
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Ошибка при создании запроса:", err)
-		return
+		return err
 	}
 
 	// Устанавливаем заголовок Content-Type для JSON
@@ -230,7 +230,7 @@ func sendPhpData(Status bool,
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Ошибка при отправке запроса:", err)
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -240,6 +240,7 @@ func sendPhpData(Status bool,
 	} else {
 		fmt.Println("Ошибка при отправке JSON-файла. Код статуса:", resp.StatusCode)
 	}
+	return nil
 }
 
 // index() обработка основной страницы
@@ -272,7 +273,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 	sizeCurFold := findFolderSizeByFiles(listResFront, currertPath)
 	//Отправляем данные для PHP
-	sendPhpData(true, err, currertPath, dt.Format("01-02-2006"), sizeCurFold, timeWorck)
+	err = sendPhpData(true, err, currertPath, dt.Format("01-02-2006"), sizeCurFold, timeWorck)
+	if err != nil {
+		log.Println(err)
+	}
 
 	jsonFormData, _ := json.Marshal(transpForFrontJson)
 	//Передаём Json в http.ResponseWriter
